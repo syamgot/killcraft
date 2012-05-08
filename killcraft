@@ -1,0 +1,72 @@
+#!/bin/bash
+
+# ----------------------------------------
+# 設定
+# ----------------------------------------
+
+# 制限時間(秒)
+limit_time=7200
+
+# 覚悟レベル
+kakugo_lv=0
+
+# セーブデータ保存場所
+save_dir=${HOME}/Library/Application\ Support/minecraft/saves
+
+# バックアップデータ保存場所
+bk_dir=${HOME}/killcraft
+
+
+# ----------------------------------------
+# 事前処理
+# ----------------------------------------
+
+pid=`ps aux | grep Minecraft.app | grep -v grep | head -n 1 | gawk '{print $2}'`
+if [ ! "${pid}" ]; then
+	exit
+fi
+
+if [ ! -e "${save_dir}" ]; then
+	kakugo_lv=0
+else 
+	if [ ! -e "${bk_dir}" ]; then
+		mkdir "${bk_dir}"
+	fi
+fi
+
+# ----------------------------------------
+# 裁き
+# ----------------------------------------
+
+if [ ${kakugo_lv} -eq 1 ]; then
+	started=`ps aux | grep Minecraft.app | grep -v grep | head -n 1 | gawk '{print $9}'`
+	date=`date '+%Y-%m-%d'`	
+	date="${date}-${started}"
+	if [ ! -e "${bk_dir}/${date}" ]; then
+		mkdir -p "${bk_dir}/${date}" 
+		cp -fR "${save_dir}" "${bk_dir}/${date}/"
+	fi
+fi
+
+t=`ps aux | grep Minecraft.app | grep -v grep | head -n 1 | gawk '{print $10}'`
+m=`echo ${t} | gawk -F ':' '{print $1}'`
+s=`echo ${t} | gawk -F ':' '{print $2}' | gawk -F '.' '{print $1}'`
+m=`expr ${m} \* 60`
+s=`expr ${m} + ${s}`
+
+if [ ${s} -gt ${limit_time} ]; then
+
+	kill -15 ${pid}
+
+	if [ ${kakugo_lv} -ge 1 ]; then
+		rm -fr "${save_dir}"
+	fi
+	if [ ${kakugo_lv} -ge 2 ]; then
+		rm -fr "${bk_dir}"
+	fi
+fi
+
+exit
+
+
+
